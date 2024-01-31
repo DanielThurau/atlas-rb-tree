@@ -1,2 +1,2 @@
 pub(crate) mod node;
-mod tree;
+pub mod tree;
