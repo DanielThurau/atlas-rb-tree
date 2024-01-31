@@ -1,7 +1,8 @@
-use std::cell::RefCell;
-use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::{
+    cell::RefCell,
+    fmt::{Debug, Formatter},
+    rc::Rc,
+};
 
 #[derive(PartialEq, Eq)]
 pub(crate) enum NodeColor {
@@ -10,7 +11,7 @@ pub(crate) enum NodeColor {
 }
 
 #[derive(PartialEq, Eq)]
-pub (crate) struct Node<T> {
+pub(crate) struct Node<T> {
     pub(crate) left: Option<Rc<RefCell<Node<T>>>>,
     pub(crate) right: Option<Rc<RefCell<Node<T>>>>,
     pub(crate) color: NodeColor,
