@@ -42,6 +42,30 @@ impl<T> Node<T> {
     pub(crate) fn set_parent(&mut self, node: Option<Rc<RefCell<Node<T>>>>) {
         self.parent = node
     }
+
+    pub(crate) fn parent_unwrap(&self) -> &Rc<RefCell<Node<T>>> {
+        self.parent.as_ref().unwrap()
+    }
+
+    pub(crate) fn parent_mut_unwrap(&mut self) -> &mut Rc<RefCell<Node<T>>> {
+        self.parent.as_mut().unwrap()
+    }
+
+    pub(crate) fn left_unwrap(&self) -> &Rc<RefCell<Node<T>>> {
+        self.left.as_ref().unwrap()
+    }
+
+    pub(crate) fn left_mut_unwrap(&mut self) -> &mut Rc<RefCell<Node<T>>> {
+        self.left.as_mut().unwrap()
+    }
+
+    pub(crate) fn right_unwrap(&self) -> &Rc<RefCell<Node<T>>> {
+        self.right.as_ref().unwrap()
+    }
+
+    pub(crate) fn right_mut_unwrap(&mut self) -> &mut Rc<RefCell<Node<T>>> {
+        self.right.as_mut().unwrap()
+    }
 }
 
 impl<T: Debug> Debug for Node<T> {
