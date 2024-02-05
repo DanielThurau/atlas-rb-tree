@@ -103,6 +103,20 @@ fn test_insert() {
 
 }
 
+#[test]
+fn test_delete() {
+    let mut tree = Tree::empty();
+    tree.insert(0);
+    println!("{:?}", tree);
+    tree.insert(2);
+    println!("{:?}", tree);
+    tree.insert(1);
+    println!("{:?}", tree);
+
+    tree.delete(1);
+    println!("{:?}", tree);
+}
+
 proptest! {
     #[test]
     fn test_minimum_empirical(a in 0u32..u32::MAX, b in 0u32..u32::MAX, c in 0u32..u32::MAX) {

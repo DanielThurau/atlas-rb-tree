@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub(crate) enum NodeColor {
     Red,
     Black,
