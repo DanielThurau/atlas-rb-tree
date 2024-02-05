@@ -9,7 +9,8 @@ Based on __Introduction to Algorithms__ 4th edition Red-Black Trees.
 
 ## TODOS
 
-- Implement the standard APIs of a tree
+- ✅ Implement the standard APIs of a tree
+- Final unit testing + integration testing
 - Benchmarks
 - Review releasing libraries into crates.io
 - Review rust Library API guidelines (https://rust-lang.github.io/api-guidelines/about.html) & https://protobuf.dev/programming-guides/api/#use-different-messages

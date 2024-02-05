@@ -30,16 +30,6 @@ impl<T> Node<T> {
         }
     }
 
-    pub(crate) fn new_with_color(key: T, color: NodeColor) -> Self {
-        Self {
-            left: None,
-            right: None,
-            color,
-            parent: None,
-            key,
-        }
-    }
-
     // TODO Return some kind of indicator if I clobber the left child.
     pub(crate) fn set_left_child(&mut self, node: Option<Rc<RefCell<Node<T>>>>) {
         self.left = node

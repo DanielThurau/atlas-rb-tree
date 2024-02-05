@@ -1,7 +1,12 @@
 use crate::{node::Node, tree::Tree};
-use std::{cell::RefCell, rc::Rc};
-use std::cmp::min;
 use proptest::prelude::*;
+use std::{cell::RefCell, cmp::min, rc::Rc};
+
+impl<T> Tree<T> {
+    fn empty() -> Tree<T> {
+        Tree { root: None }
+    }
+}
 
 #[test]
 fn test_left_rotate() {
@@ -100,20 +105,19 @@ fn test_insert() {
     println!("{:?}", tree);
     tree.insert(1);
     println!("{:?}", tree);
-
 }
 
 #[test]
 fn test_delete() {
     let mut tree = Tree::empty();
     tree.insert(0);
-    println!("{:?}", tree);
     tree.insert(2);
+    println!("{:?}", tree);
     println!("{:?}", tree);
     tree.insert(1);
     println!("{:?}", tree);
 
-    tree.delete(1);
+    tree.delete(2);
     println!("{:?}", tree);
 }
 
