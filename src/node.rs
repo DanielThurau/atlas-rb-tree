@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub(crate) enum NodeColor {
     Red,
     Black,
@@ -25,6 +25,16 @@ impl<T> Node<T> {
             left: None,
             right: None,
             color: NodeColor::Black,
+            parent: None,
+            key,
+        }
+    }
+
+    pub(crate) fn new_with_color(key: T, color: NodeColor) -> Self {
+        Self {
+            left: None,
+            right: None,
+            color,
             parent: None,
             key,
         }
@@ -74,7 +84,7 @@ impl<T: Debug> Debug for Node<T> {
             write!(f, "{:?}", self.left.as_ref().unwrap().borrow())?;
         }
 
-        write!(f, "{:?} ", self.key)?;
+        write!(f, "key: {:?} color: {:?}", self.key, self.color)?;
 
         if self.right.is_some() {
             write!(f, "{:?}", self.right.as_ref().unwrap().borrow())?;

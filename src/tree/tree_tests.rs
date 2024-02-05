@@ -1,52 +1,123 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-use crate::node::Node;
-use crate::tree::Tree;
+use crate::{node::Node, tree::Tree};
+use std::{cell::RefCell, rc::Rc};
+use std::cmp::min;
+use proptest::prelude::*;
 
 #[test]
-fn test_rotate() {
+fn test_left_rotate() {
+    // Build a Tree that looks like this:
+    //
+    //               2
+    //             /   \
+    //            1      4
+    //                  /  \
+    //                 3    5
+    //
     let a = Node::new(1);
     let b = Node::new(3);
     let c = Node::new(5);
-
     let mut y = Node::new(4);
     let mut x = Node::new(2);
     y.set_left_child(Some(Rc::new(RefCell::new(b))));
     y.set_right_child(Some(Rc::new(RefCell::new(c))));
     x.set_left_child(Some(Rc::new(RefCell::new(a))));
     x.set_right_child(Some(Rc::new(RefCell::new(y))));
+    let mut actual_tree = Tree::new_from_node(x);
 
-    println!("{:?}", x);
-    println!("Root: {:?}", x.key);
+    // Build the expected Tree after performing a left rotate
+    //
+    //                4
+    //               /  \
+    //              1    5
+    //            /  \
+    //           3     2
+    let a = Node::new(1);
+    let b = Node::new(3);
+    let c = Node::new(5);
+    let mut y = Node::new(4);
+    let mut x = Node::new(2);
+    x.set_left_child(Some(Rc::new(RefCell::new(a))));
+    x.set_right_child(Some(Rc::new(RefCell::new(b))));
+    y.set_left_child(Some(Rc::new(RefCell::new(x))));
+    y.set_right_child(Some(Rc::new(RefCell::new(c))));
+    let expected_tree = Tree::new_from_node(y);
 
-    let mut t = Tree::new_from_node(x);
+    actual_tree.left_rotate(actual_tree.root.as_ref().unwrap().clone());
 
-    println!("{:?}", t);
-    println!("Root: {:?}", t.root.as_ref().unwrap().borrow().key);
+    assert_eq!(actual_tree, expected_tree);
+}
 
-    t.left_rotate(t.root.as_ref().unwrap().clone());
+#[test]
+fn test_right_rotate() {
+    // Build the Tree after performing a left rotate
+    //
+    //                4
+    //               /  \
+    //              1    5
+    //            /  \
+    //           3     2
+    let a = Node::new(1);
+    let b = Node::new(3);
+    let c = Node::new(5);
+    let mut y = Node::new(4);
+    let mut x = Node::new(2);
+    x.set_left_child(Some(Rc::new(RefCell::new(a))));
+    x.set_right_child(Some(Rc::new(RefCell::new(b))));
+    y.set_left_child(Some(Rc::new(RefCell::new(x))));
+    y.set_right_child(Some(Rc::new(RefCell::new(c))));
+    let mut actual_tree = Tree::new_from_node(y);
 
-    println!("{:?}", t);
-    println!("Root: {:?}", t.root.as_ref().unwrap().borrow().key);
+    // Build an expected Tree that looks like this:
+    //
+    //               2
+    //             /   \
+    //            1      4
+    //                  /  \
+    //                 3    5
+    //
+    let a = Node::new(1);
+    let b = Node::new(3);
+    let c = Node::new(5);
+    let mut y = Node::new(4);
+    let mut x = Node::new(2);
+    y.set_left_child(Some(Rc::new(RefCell::new(b))));
+    y.set_right_child(Some(Rc::new(RefCell::new(c))));
+    x.set_left_child(Some(Rc::new(RefCell::new(a))));
+    x.set_right_child(Some(Rc::new(RefCell::new(y))));
+    let expected_tree = Tree::new_from_node(x);
 
-    t.right_rotate(t.root.as_ref().unwrap().clone());
-    println!("{:?}", t);
-    println!("Root: {:?}", t.root.as_ref().unwrap().borrow().key);
+    actual_tree.right_rotate(actual_tree.root.as_ref().unwrap().clone());
+
+    assert_eq!(actual_tree, expected_tree);
 }
 
 #[test]
 fn test_insert() {
-    let mut t = Tree::new(2);
-    println!("{:?}", t);
+    let mut tree = Tree::empty();
+    tree.insert(0);
+    println!("{:?}", tree);
+    tree.insert(2);
+    println!("{:?}", tree);
+    tree.insert(1);
+    println!("{:?}", tree);
 
-    t.insert(1);
-    println!("{:?}", t);
+}
 
-    t.insert(4);
-    println!("{:?}", t);
+proptest! {
+    #[test]
+    fn test_minimum_empirical(a in 0u32..u32::MAX, b in 0u32..u32::MAX, c in 0u32..u32::MAX) {
+        let mut tree = Tree::empty();
+        println!("a: {}", a);
+        tree.insert(a);
+        println!("b: {}", b);
+        tree.insert(b);
+        println!("c: {}", c);
+        tree.insert(c);
+        let actual_min = tree.minimum();
 
-    t.insert(3);
-    println!("{:?}", t);
-    t.insert(5);
-    println!("{:?}", t);
+        let expected_min = min(min(a, b), c);
+
+        println!("Actual_min={:?}, expected_min={}", actual_min, expected_min);
+        prop_assert_eq!(actual_min, Some(expected_min));
+    }
 }

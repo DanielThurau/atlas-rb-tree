@@ -23,8 +23,8 @@ pub struct Tree<T> {
     root: Option<Rc<RefCell<Node<T>>>>,
 }
 
-impl<T: Ord + Clone + PartialEq> Tree<T>
-{
+// TODO cleanup traits. For instance, debug might be to strict.
+impl<T: Ord + Clone + PartialEq +Debug> Tree<T> {
     pub fn new(key: T) -> Tree<T> {
         Tree {
             root: Some(Rc::new(RefCell::new(Node::new(key)))),
@@ -34,6 +34,12 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
     fn new_from_node(node: Node<T>) -> Tree<T> {
         Tree {
             root: Some(Rc::new(RefCell::new(node))),
+        }
+    }
+
+    fn empty() -> Tree<T> {
+        Tree {
+            root: None,
         }
     }
 
@@ -63,6 +69,8 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
         } else {
             y.as_mut().unwrap().borrow_mut().right = Some(z.clone());
         }
+
+        // TODO the constructor guarantees this. It could be removed.
         z.borrow_mut().left = None;
         z.borrow_mut().right = None;
         z.borrow_mut().color = NodeColor::Red;
@@ -70,9 +78,6 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
     }
 
     fn insert_fix_up(&mut self, mut z: Rc<RefCell<Node<T>>>) {
-        if z.borrow().parent.is_none() {
-            panic!("You violated an invariant. Z's parent cannot be none.");
-        }
         while z.borrow().parent.is_some()
             && z.borrow().parent_unwrap().borrow().color == NodeColor::Red
         {
@@ -84,19 +89,19 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
                     .borrow()
                     .left
             {
-                let y = z
+                let mut y = z
                     .borrow()
                     .parent_unwrap()
                     .borrow()
                     .parent_unwrap()
                     .borrow()
                     .right
-                    .clone()
-                    .unwrap();
+                    .clone();
                 // Case 1
-                if y.borrow().color == NodeColor::Red {
+                if y.is_some() && y.as_ref().unwrap().borrow().color == NodeColor::Red {
+                    // println!("Case 1");
                     z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    y.borrow_mut().color = NodeColor::Black;
+                    y.as_mut().unwrap().borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
                         .parent_mut_unwrap()
                         .borrow_mut()
@@ -107,12 +112,14 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
                     z = z_tmp;
                 } else {
                     // Case 2
-                    if z == z.borrow().parent_unwrap().borrow().right_unwrap().clone() {
+                    if Some(z.clone()) == z.borrow().parent_unwrap().borrow().right {
+                        // println!("Case 2");
                         let z_tmp = z.borrow().parent_unwrap().clone();
                         z = z_tmp;
                         self.left_rotate(z.clone());
                     }
                     // Case 3
+                    // println!("Case 3");
                     z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
                         .parent_mut_unwrap()
@@ -120,22 +127,23 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
                         .parent_mut_unwrap()
                         .borrow_mut()
                         .color = NodeColor::Red;
-                    self.right_rotate(z.borrow().parent_unwrap().borrow().parent_unwrap().clone());
+                    let x = z.borrow().parent_unwrap().borrow().parent_unwrap().clone();
+                    self.right_rotate(x);
                 }
             } else {
-                let y = z
+                let mut y = z
                     .borrow()
                     .parent_unwrap()
                     .borrow()
                     .parent_unwrap()
                     .borrow()
                     .left
-                    .clone()
-                    .unwrap();
+                    .clone();
                 // Case 4
-                if y.borrow().color == NodeColor::Red {
+                if y.is_some() && y.as_ref().unwrap().borrow().color == NodeColor::Red {
+                    // println!("Case 4");
                     z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    y.borrow_mut().color = NodeColor::Black;
+                    y.as_mut().unwrap().borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
                         .parent_mut_unwrap()
                         .borrow_mut()
@@ -146,12 +154,15 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
                     z = z_tmp;
                 } else {
                     // Case 5
-                    if z == z.borrow().parent_unwrap().borrow().left_unwrap().clone() {
+                    if Some(z.clone()) == z.borrow().parent_unwrap().borrow().left {
+                        // println!("Case 5");
                         let z_tmp = z.borrow().parent_unwrap().clone();
                         z = z_tmp;
                         self.right_rotate(z.clone());
                     }
+                    // println!("5={:?}", self.root);
                     // Case 6
+                    // println!("Case 6");
                     z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
                         .parent_mut_unwrap()
@@ -159,7 +170,9 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
                         .parent_mut_unwrap()
                         .borrow_mut()
                         .color = NodeColor::Red;
-                    self.right_rotate(z.borrow().parent_unwrap().borrow().parent_unwrap().clone());
+                    let x = z.borrow().parent_unwrap().borrow().parent_unwrap().clone();
+                    self.left_rotate(x);
+                    // println!("6={:?}", self.root);
                 }
             }
         }
@@ -168,7 +181,7 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
 
     fn left_rotate(&mut self, x: Rc<RefCell<Node<T>>>) {
         if x.borrow().right.is_some() {
-            let y = x.borrow().right_unwrap().clone();
+            let y = x.borrow_mut().right.take().unwrap();
             x.borrow_mut().set_right_child(y.borrow().left.clone());
             if y.borrow().left.is_some() {
                 y.borrow_mut().left_mut_unwrap().borrow_mut().parent = Some(x.clone());
@@ -190,7 +203,7 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
 
     fn right_rotate(&mut self, y: Rc<RefCell<Node<T>>>) {
         if y.borrow().left.is_some() {
-            let x = y.borrow_mut().left_mut_unwrap().clone();
+            let mut x = y.clone().borrow_mut().left.take().unwrap();
             y.borrow_mut().set_left_child(x.borrow().right.clone());
             if x.borrow().right.is_some() {
                 x.borrow_mut().right_mut_unwrap().borrow_mut().parent = Some(y.clone());
@@ -198,13 +211,13 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
             x.borrow_mut().set_parent(y.borrow().parent.clone());
             if y.borrow().parent.is_none() {
                 self.root = Some(x.clone());
-            } else if Some(y.clone()) == y.borrow().parent_unwrap().borrow().left {
+            } else if Some(y.clone()) == y.borrow().parent_unwrap().borrow().right {
                 y.borrow_mut().parent_mut_unwrap().borrow_mut().right = Some(x.clone());
             } else {
                 y.borrow_mut().parent_mut_unwrap().borrow_mut().left = Some(x.clone());
             }
             x.borrow_mut().right = Some(y.clone());
-            y.borrow_mut().parent = Some(x);
+            y.borrow_mut().parent = Some(x.clone());
         } else {
             panic!("I Don't have the implementation for this yet.")
         }
@@ -241,19 +254,25 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
     }
 
     pub fn minimum(&self) -> Option<T> {
-        self.minimum_node().and_then(|node| Some(node.borrow().key.clone()))
+        self.minimum_node()
+            .and_then(|node| Some(node.borrow().key.clone()))
     }
     fn minimum_node(&self) -> Option<Rc<RefCell<Node<T>>>> {
-        let mut x = self.root.clone();
-        while x.is_some() {
-            let x_tmp = x.unwrap().borrow().left.clone();
+        if self.root.is_none() {
+            return None;
+        }
+
+        let mut x = self.root.clone().unwrap();
+        while x.borrow().left.is_some() {
+            let x_tmp = x.borrow().left.as_ref().unwrap().clone();
             x = x_tmp;
         }
-        x
+        Some(x)
     }
 
     pub fn maximum(&self) -> Option<T> {
-        self.maximum_node().and_then(|node| Some(node.borrow().key.clone()))
+        self.maximum_node()
+            .and_then(|node| Some(node.borrow().key.clone()))
     }
     fn maximum_node(&self) -> Option<Rc<RefCell<Node<T>>>> {
         let mut x = self.root.clone();
@@ -276,5 +295,52 @@ impl<T: Ord + Clone + PartialEq> Tree<T>
 impl<T: Debug> Debug for Tree<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.root)
+    }
+}
+
+/// A DFS implementation using recursion that iterates the
+/// entire tree for equality. There are a few speedups I've included,
+/// like eliminating base cases and greedily failing.
+fn tree_equality_dfs<T: PartialEq>(
+    me: Option<Rc<RefCell<Node<T>>>>,
+    other: Option<Rc<RefCell<Node<T>>>>,
+) -> bool {
+    // Solve base cases
+    match (me.clone(), other.clone()) {
+        (None, None) => return true,
+        (Some(_), Some(_)) => (),
+        _ => return false,
+    }
+
+    if me.as_ref().unwrap().borrow().color != other.as_ref().unwrap().borrow().color {
+        return false;
+    }
+
+    if me.as_ref().unwrap().borrow().key != other.as_ref().unwrap().borrow().key {
+        return false;
+    }
+
+    let left_subtree = tree_equality_dfs(
+        me.as_ref().unwrap().borrow().left.clone(),
+        other.as_ref().unwrap().borrow().left.clone(),
+    );
+    if !left_subtree {
+        return false;
+    }
+
+    let right_subtree = tree_equality_dfs(
+        me.as_ref().unwrap().borrow().right.clone(),
+        other.as_ref().unwrap().borrow().right.clone(),
+    );
+    if !right_subtree {
+        return false;
+    }
+
+    true
+}
+
+impl<T: PartialEq> PartialEq<Self> for Tree<T> {
+    fn eq(&self, other: &Self) -> bool {
+        tree_equality_dfs(self.root.clone(), other.root.clone())
     }
 }
