@@ -1,16 +1,26 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use rb_tree::tree::Tree;
 
-fn fibonacci(n: u64) -> u64 {
-    match n {
-        0 => 1,
-        1 => 1,
-        n => fibonacci(n - 1) + fibonacci(n - 2),
-    }
+fn insert_benchmark(c: &mut Criterion) {
+    c.bench_function("Tree insert", |b| {
+
+        b.iter(||{
+            let mut tree = Tree::new(1);
+            tree.insert(black_box(1));});
+
+    });
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("fib 20", |b| b.iter(|| fibonacci(black_box(20))));
+fn delete_benchmark(c: &mut Criterion) {
+    c.bench_function("Tree delete", |b| {
+
+        b.iter(|| {
+            let mut tree = Tree::new(0);
+            tree.insert(1);
+            tree.delete(black_box(1))
+        });
+    });
 }
 
-criterion_group!(benches, criterion_benchmark);
+criterion_group!(benches, insert_benchmark);
 criterion_main!(benches);

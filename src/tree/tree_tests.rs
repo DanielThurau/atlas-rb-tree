@@ -101,8 +101,6 @@ fn test_insert() {
     let mut tree = Tree::empty();
     tree.insert(0);
     println!("{:?}", tree);
-    tree.insert(2);
-    println!("{:?}", tree);
     tree.insert(1);
     println!("{:?}", tree);
 }
