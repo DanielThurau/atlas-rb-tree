@@ -13,7 +13,7 @@ pub struct Tree<T> {
 }
 
 // TODO cleanup traits. For instance, debug might be to strict.
-impl<T: Ord + Clone + PartialEq + Debug> Tree<T> {
+impl<T: PartialOrd + Clone + PartialEq + Debug> Tree<T> {
     pub fn new(key: T) -> Tree<T> {
         Self::new_from_node(Node::new(key))
     }

@@ -22,5 +22,5 @@ fn delete_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, insert_benchmark);
+criterion_group!(benches, insert_benchmark, delete_benchmark);
 criterion_main!(benches);

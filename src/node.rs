@@ -4,6 +4,9 @@ use std::{
     rc::Rc,
 };
 
+#[cfg(test)]
+mod node_tests;
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub(crate) enum NodeColor {
     Red,
@@ -30,7 +33,6 @@ impl<T> Node<T> {
         }
     }
 
-    // TODO Return some kind of indicator if I clobber the left child.
     pub(crate) fn set_left_child(&mut self, node: Option<Rc<RefCell<Node<T>>>>) {
         self.left = node
     }
