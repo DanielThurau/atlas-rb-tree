@@ -1,9 +1,7 @@
-# rb-tree
-
 # Red-black Tree in Rust
 
 This project is a Rust implementation of the Red-black Tree
-as describe in __Introduction to Algorithms 4th edition__. 
+data structure as described in __Introduction to Algorithms 4th edition__. 
 You Could call this a "textbook implementation". 
 
 A Red-black Tree is a kind of self-balancing binary search tree.
@@ -21,7 +19,7 @@ insert elements and search within the tree:
 use rb_tree::Tree;
 
 fn main() {
-    let mut tree = Tree::new(0); // Initialize the tree with an  integer
+    let mut tree = Tree::new(0); 
     tree.insert(5);
     tree.insert(3);
     tree.insert(10);
