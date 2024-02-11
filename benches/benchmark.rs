@@ -3,17 +3,15 @@ use rb_tree::tree::Tree;
 
 fn insert_benchmark(c: &mut Criterion) {
     c.bench_function("Tree insert", |b| {
-
-        b.iter(||{
+        b.iter(|| {
             let mut tree = Tree::new(1);
-            tree.insert(black_box(1));});
-
+            tree.insert(black_box(1));
+        });
     });
 }
 
 fn delete_benchmark(c: &mut Criterion) {
     c.bench_function("Tree delete", |b| {
-
         b.iter(|| {
             let mut tree = Tree::new(0);
             tree.insert(1);

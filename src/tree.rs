@@ -9,193 +9,214 @@ use std::{
 mod tree_tests;
 
 pub struct Tree<T> {
-    root: Option<Rc<RefCell<Node<T>>>>,
+    root: Rc<RefCell<Node<T>>>,
+    sentinel: Rc<RefCell<Node<T>>>,
 }
 
 // TODO cleanup traits. For instance, debug might be to strict.
-impl<T: PartialOrd + Clone + PartialEq + Debug> Tree<T> {
-    pub fn new(key: T) -> Tree<T> {
-        Self::new_from_node(Node::new(key))
+impl<T: PartialOrd + Clone + PartialEq + Debug + Default> Tree<T> {
+    pub fn empty() -> Tree<T> {
+        let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
+        Self {
+            root: sentinel.clone(),
+            sentinel,
+        }
     }
 
-    fn new_from_node(node: Node<T>) -> Tree<T> {
-        Tree {
-            root: Some(Rc::new(RefCell::new(node))),
-        }
+    pub fn new(key: T) -> Tree<T> {
+        let root = Rc::new(RefCell::new(Node::new(key)));
+        let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
+        root.borrow_mut().set_parent(sentinel.clone());
+        root.borrow_mut().set_left_child(sentinel.clone());
+        root.borrow_mut().set_right_child(sentinel.clone());
+
+        Self { root, sentinel }
     }
 
     pub fn insert(&mut self, key: T) {
         let mut z = Node::new(key);
         let mut x = self.root.clone();
-        let mut y = None;
+        let mut y = self.sentinel.clone();
 
-        while x.is_some() {
+        while !x.borrow().is_nil() {
             y = x.clone();
-            if z.key < x.as_ref().unwrap().borrow().key {
-                let x_tmp = x.as_ref().unwrap().borrow().left.clone();
+            if z.key < x.borrow().key {
+                let x_tmp = x.borrow().left().clone();
                 x = x_tmp
             } else {
-                let x_tmp = x.as_ref().unwrap().borrow().right.clone();
+                let x_tmp = x.borrow().right().clone();
                 x = x_tmp;
             }
         }
-        z.parent = y.clone();
+        z.set_parent(y.clone());
         // Z is now Reference counted for
         let z = Rc::new(RefCell::new(z));
 
-        if y.is_none() {
-            self.root = Some(z.clone());
-        } else if z.borrow().key < y.as_ref().unwrap().borrow().key {
-            y.as_mut().unwrap().borrow_mut().left = Some(z.clone());
+        if y.borrow().is_nil() {
+            self.root = z.clone();
+        } else if z.borrow().key < y.borrow().key {
+            y.borrow_mut().set_left_child(z.clone());
         } else {
-            y.as_mut().unwrap().borrow_mut().right = Some(z.clone());
+            y.borrow_mut().set_right_child(z.clone());
         }
 
-        z.borrow_mut().left = None;
-        z.borrow_mut().right = None;
+        z.borrow_mut().set_left_child(self.sentinel.clone());
+        z.borrow_mut().set_right_child(self.sentinel.clone());
         z.borrow_mut().color = NodeColor::Red;
         self.insert_fix_up(z);
     }
 
     fn insert_fix_up(&mut self, mut z: Rc<RefCell<Node<T>>>) {
-        while z.borrow().parent.is_some()
-            && z.borrow().parent_unwrap().borrow().color == NodeColor::Red
-        {
-            if z.borrow().parent
-                == z.borrow()
-                    .parent_unwrap()
+        while z.borrow().parent().borrow().color == NodeColor::Red {
+            if z.borrow().parent() == z.borrow().parent().borrow().parent().borrow().left() {
+                let y = z
                     .borrow()
-                    .parent_unwrap()
+                    .parent()
                     .borrow()
-                    .left
-            {
-                let mut y = z
+                    .parent()
                     .borrow()
-                    .parent_unwrap()
-                    .borrow()
-                    .parent_unwrap()
-                    .borrow()
-                    .right
+                    .right()
                     .clone();
                 // Case 1
-                if y.is_some() && y.as_ref().unwrap().borrow().color == NodeColor::Red {
-                    z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    y.as_mut().unwrap().borrow_mut().color = NodeColor::Black;
+                if y.borrow().color == NodeColor::Red {
+                    z.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Black;
+                    y.borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
                         .color = NodeColor::Red;
-                    let z_tmp = z.borrow().parent_unwrap().borrow().parent_unwrap().clone();
+                    let z_tmp = z.borrow().parent().borrow().parent().clone();
                     z = z_tmp;
                 } else {
                     // Case 2
-                    if Some(z.clone()) == z.borrow().parent_unwrap().borrow().right {
-                        let z_tmp = z.borrow().parent_unwrap().clone();
+                    if &z == z.borrow().parent().borrow().right() {
+                        let z_tmp = z.borrow().parent().clone();
                         z = z_tmp;
                         self.left_rotate(z.clone());
                     }
                     // Case 3
-                    z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
+                    z.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
                         .color = NodeColor::Red;
-                    let x = z.borrow().parent_unwrap().borrow().parent_unwrap().clone();
+                    let x = z.borrow().parent().borrow().parent().clone();
                     self.right_rotate(x);
                 }
             } else {
-                let mut y = z
+                let y = z
                     .borrow()
-                    .parent_unwrap()
+                    .parent()
                     .borrow()
-                    .parent_unwrap()
+                    .parent()
                     .borrow()
-                    .left
+                    .left()
                     .clone();
                 // Case 4
-                if y.is_some() && y.as_ref().unwrap().borrow().color == NodeColor::Red {
-                    z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    y.as_mut().unwrap().borrow_mut().color = NodeColor::Black;
+                if y.borrow().color == NodeColor::Red {
+                    z.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Black;
+                    y.borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
                         .color = NodeColor::Red;
-                    let z_tmp = z.borrow().parent_unwrap().borrow().parent_unwrap().clone();
+                    let z_tmp = z.borrow().parent().borrow().parent().clone();
                     z = z_tmp;
                 } else {
                     // Case 5
-                    if Some(z.clone()) == z.borrow().parent_unwrap().borrow().left {
-                        let z_tmp = z.borrow().parent_unwrap().clone();
+                    if &z == z.borrow().parent().borrow().left() {
+                        let z_tmp = z.borrow().parent().clone();
                         z = z_tmp;
                         self.right_rotate(z.clone());
                     }
                     // Case 6
-                    z.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
+                    z.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Black;
                     z.borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
-                        .parent_mut_unwrap()
+                        .parent_mut()
                         .borrow_mut()
                         .color = NodeColor::Red;
-                    let x = z.borrow().parent_unwrap().borrow().parent_unwrap().clone();
+                    let x = z.borrow().parent().borrow().parent().clone();
                     self.left_rotate(x);
                 }
             }
         }
-        self.root.as_mut().unwrap().borrow_mut().color = NodeColor::Black;
+        self.root.borrow_mut().color = NodeColor::Black;
     }
 
     fn left_rotate(&mut self, x: Rc<RefCell<Node<T>>>) {
-        if x.borrow().right.is_some() {
-            let y = x.borrow_mut().right.take().unwrap();
-            x.borrow_mut().set_right_child(y.borrow().left.clone());
-            if y.borrow().left.is_some() {
-                y.borrow_mut().left_mut_unwrap().borrow_mut().parent = Some(x.clone());
+        // Assumes that x.right != T.nil
+        if !x.borrow().right().borrow().is_nil() {
+            // let y = x.borrow_mut().right.take().unwrap();
+            let y = x.borrow().right().clone();
+            x.borrow_mut().set_right_child(y.borrow().left().clone());
+            if !y.borrow().left().borrow().is_nil() {
+                y.borrow_mut().left_mut().borrow_mut().set_parent(x.clone());
             }
-            y.borrow_mut().set_parent(x.borrow().parent.clone());
-            if x.borrow().parent.is_none() {
-                self.root = Some(y.clone());
-            } else if Some(x.clone()) == x.borrow().parent_unwrap().borrow().left {
-                x.borrow_mut().parent_mut_unwrap().borrow_mut().left = Some(y.clone());
+            y.borrow_mut().set_parent(x.borrow().parent().clone());
+            if x.borrow().parent().borrow().is_nil() {
+                self.root = y.clone();
+            } else if &x == x.borrow().parent().borrow().left() {
+                // TODO
+                x.borrow_mut()
+                    .parent_mut()
+                    .borrow_mut()
+                    .set_left_child(y.clone());
             } else {
-                x.borrow_mut().parent_mut_unwrap().borrow_mut().right = Some(y.clone());
+                x.borrow_mut()
+                    .parent_mut()
+                    .borrow_mut()
+                    .set_right_child(y.clone());
             }
-            y.borrow_mut().left = Some(x.clone());
-            x.borrow_mut().parent = Some(y);
+
+            y.borrow_mut().set_left_child(x.clone());
+            x.borrow_mut().set_parent(y);
         } else {
             panic!(
-                "Invariant violated. The right child of {:?} must not be None.",
+                "Invariant violated. The right child of {:?} must not be T.nil.",
                 x
             );
         }
     }
 
     fn right_rotate(&mut self, y: Rc<RefCell<Node<T>>>) {
-        if y.borrow().left.is_some() {
-            let x = y.clone().borrow_mut().left.take().unwrap();
-            y.borrow_mut().set_left_child(x.borrow().right.clone());
-            if x.borrow().right.is_some() {
-                x.borrow_mut().right_mut_unwrap().borrow_mut().parent = Some(y.clone());
+        // Assumes that x.left != T.nil
+        if !y.borrow().left().borrow().is_nil() {
+            // let x = y.clone().borrow_mut().left.take().unwrap();
+            let x = y.borrow().left().clone();
+            y.borrow_mut().set_left_child(x.borrow().right().clone());
+            if !x.borrow().right().borrow().is_nil() {
+                x.borrow_mut()
+                    .right_mut()
+                    .borrow_mut()
+                    .set_parent(y.clone());
             }
-            x.borrow_mut().set_parent(y.borrow().parent.clone());
-            if y.borrow().parent.is_none() {
-                self.root = Some(x.clone());
-            } else if Some(y.clone()) == y.borrow().parent_unwrap().borrow().right {
-                y.borrow_mut().parent_mut_unwrap().borrow_mut().right = Some(x.clone());
+            x.borrow_mut().set_parent(y.borrow().parent().clone());
+            if y.borrow().parent().borrow().is_nil() {
+                self.root = x.clone();
+            } else if &y.clone() == y.borrow().parent().borrow().right() {
+                y.borrow_mut()
+                    .parent_mut()
+                    .borrow_mut()
+                    .set_right_child(x.clone());
             } else {
-                y.borrow_mut().parent_mut_unwrap().borrow_mut().left = Some(x.clone());
+                y.borrow_mut()
+                    .parent_mut()
+                    .borrow_mut()
+                    .set_left_child(x.clone());
             }
-            x.borrow_mut().right = Some(y.clone());
-            y.borrow_mut().parent = Some(x.clone());
+            x.borrow_mut().set_right_child(y.clone());
+            y.borrow_mut().set_parent(x);
         } else {
             panic!(
-                "Invariant violated. The left child of {:?} must not be None.",
+                "Invariant violated. The left child of {:?} must not be T.nil.",
                 y
             );
         }
@@ -211,156 +232,128 @@ impl<T: PartialOrd + Clone + PartialEq + Debug> Tree<T> {
     fn delete_node(&mut self, z: Rc<RefCell<Node<T>>>) {
         let mut y = z.clone();
         let mut y_color = y.borrow().color.clone();
-        let mut x;
-        if z.borrow().left.is_none() {
-            x = z.borrow().right.clone();
+        let x;
+        if z.borrow().left().borrow().is_nil() {
+            x = z.borrow().right().clone();
             let u = z.clone();
-            let v = z.borrow().right.clone();
+            let v = z.borrow().right().clone();
             self.transplant(u, v);
-        } else if z.borrow().right.is_none() {
-            x = z.borrow().left.clone();
+        } else if z.borrow().right().borrow().is_nil() {
+            x = z.borrow().left().clone();
             let u = z.clone();
-            let v = z.borrow().left.clone();
+            let v = z.borrow().left().clone();
             self.transplant(u, v);
         } else {
             y = self
-                .minimum_node(z.borrow().right.clone().unwrap())
+                .minimum_node(z.borrow().right().clone())
                 .expect("Expected this to be set");
             y_color = y.borrow().color.clone();
-            x = y.borrow().right.clone();
-            if Some(y.clone()) != z.borrow().right {
+            x = y.borrow().right().clone();
+            if &y != z.borrow().right() {
                 let u = y.clone();
-                let v = y.borrow().right.clone();
+                let v = y.borrow().right().clone();
                 self.transplant(u, v);
-                y.borrow_mut().right = z.borrow().right.clone();
+                y.borrow_mut().set_right_child(z.borrow().right().clone());
                 y.borrow_mut()
-                    .right_mut_unwrap()
+                    .right_mut()
                     .borrow_mut()
-                    .set_parent(Some(y.clone()));
+                    .set_parent(y.clone());
             } else {
-                if x.is_some() {
-                    x.as_mut().unwrap().borrow_mut().set_parent(Some(y.clone()));
-                }
+                x.borrow_mut().set_parent(y.clone());
             }
             let u = z.clone();
-            let v = Some(y.clone());
+            let v = y.clone();
             self.transplant(u, v);
-            y.borrow_mut().set_left_child(z.borrow().left.clone());
-            y.borrow_mut()
-                .left_mut_unwrap()
-                .borrow_mut()
-                .set_parent(Some(y.clone()));
+            y.borrow_mut().set_left_child(z.borrow().left().clone());
+            y.borrow_mut().left_mut().borrow_mut().set_parent(y.clone());
             y.borrow_mut().color = z.borrow().color.clone();
         }
 
         if y_color == NodeColor::Black {
-            self.delete_fix_up(x.unwrap());
+            self.delete_fix_up(x);
         }
     }
 
-    fn transplant(&mut self, u: Rc<RefCell<Node<T>>>, mut v: Option<Rc<RefCell<Node<T>>>>) {
-        if u.borrow().parent.is_none() {
+    fn transplant(&mut self, u: Rc<RefCell<Node<T>>>, v: Rc<RefCell<Node<T>>>) {
+        if u.borrow().parent().borrow().is_nil() {
             self.root = v.clone();
-        } else if Some(u.clone()) == u.borrow().parent_unwrap().borrow().left {
-            u.borrow_mut().parent_mut_unwrap().borrow_mut().left = v.clone();
+        } else if &u == u.borrow().parent().borrow().left() {
+            u.borrow_mut()
+                .parent_mut()
+                .borrow_mut()
+                .set_left_child(v.clone());
         } else {
-            u.borrow_mut().parent_mut_unwrap().borrow_mut().right = v.clone();
+            u.borrow_mut()
+                .parent_mut()
+                .borrow_mut()
+                .set_right_child(v.clone());
         }
-
-        if v.is_some() {
-            v.as_mut().unwrap().borrow_mut().parent = u.borrow().parent.clone();
-        }
+        v.borrow_mut().set_parent(u.borrow().parent().clone());
     }
 
     fn delete_fix_up(&mut self, mut x: Rc<RefCell<Node<T>>>) {
-        while Some(x.clone()) != self.root && x.borrow().color == NodeColor::Black {
-            if Some(x.clone()) == x.borrow().parent.as_ref().unwrap().borrow().left {
-                let mut w = x
-                    .borrow()
-                    .parent_unwrap()
-                    .borrow()
-                    .right
-                    .as_ref()
-                    .unwrap()
-                    .clone();
+        while x != self.root && x.borrow().color == NodeColor::Black {
+            if &x == x.borrow().parent().borrow().left() {
+                let mut w = x.borrow().parent().borrow().right().clone();
                 // Case 1
                 if w.borrow().color == NodeColor::Red {
                     w.borrow_mut().color = NodeColor::Black;
-                    x.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Red;
-                    self.left_rotate(x.borrow().parent.as_ref().unwrap().clone());
-                    w = x
-                        .borrow()
-                        .parent_unwrap()
-                        .borrow()
-                        .right
-                        .as_ref()
-                        .unwrap()
-                        .clone();
+                    x.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Red;
+                    self.left_rotate(x.borrow().parent().clone());
+                    w = x.borrow().parent().borrow().right().clone();
                 }
 
-                if w.borrow().left.as_ref().unwrap().borrow().color == NodeColor::Black
-                    && w.borrow().right.as_ref().unwrap().borrow().color == NodeColor::Black
+                if w.borrow().left().borrow().color == NodeColor::Black
+                    && w.borrow().right().borrow().color == NodeColor::Black
                 {
                     w.borrow_mut().color = NodeColor::Red;
-                    let x_tmp = x.borrow().parent_unwrap().clone();
+                    let x_tmp = x.borrow().parent().clone();
                     x = x_tmp;
                 } else {
                     // Case 3
-                    if w.borrow_mut().right.as_mut().unwrap().borrow().color == NodeColor::Black {
-                        w.borrow_mut().left.as_mut().unwrap().borrow_mut().color = NodeColor::Black;
+                    if w.borrow_mut().right().borrow().color == NodeColor::Black {
+                        w.borrow_mut().left().borrow_mut().color = NodeColor::Black;
                         w.borrow_mut().color = NodeColor::Red;
                         self.right_rotate(w.clone());
-                        w = x
-                            .borrow()
-                            .parent_unwrap()
-                            .borrow()
-                            .right
-                            .as_ref()
-                            .unwrap()
-                            .clone();
+                        w = x.borrow().parent().borrow().right().clone();
                     }
                     // Case 4
-                    w.borrow_mut().color = x.borrow().parent_unwrap().borrow().color.clone();
-                    x.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    w.borrow_mut().right_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    self.left_rotate(x.borrow().parent_unwrap().clone());
-                    x = self.root.as_ref().unwrap().clone();
+                    w.borrow_mut().color = x.borrow().parent().borrow().color.clone();
+                    x.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Black;
+                    w.borrow_mut().right_mut().borrow_mut().color = NodeColor::Black;
+                    self.left_rotate(x.borrow().parent().clone());
+                    x = self.root.clone();
                 }
             } else {
-                let mut w = x.borrow().parent_unwrap().borrow().left_unwrap().clone();
+                let mut w = x.borrow().parent().borrow().left().clone();
                 // Case 5
                 if w.borrow_mut().color == NodeColor::Red {
                     w.borrow_mut().color = NodeColor::Black;
-                    x.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Red;
-                    self.right_rotate(x.borrow().parent_unwrap().clone());
-                    w = x.borrow().parent_unwrap().borrow().left_unwrap().clone();
+                    x.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Red;
+                    self.right_rotate(x.borrow().parent().clone());
+                    w = x.borrow().parent().borrow().left().clone();
                 }
                 // Case 6
-                if w.borrow().right_unwrap().borrow().color == NodeColor::Black
-                    && w.borrow().left_unwrap().borrow().color == NodeColor::Black
+                if w.borrow().right().borrow().color == NodeColor::Black
+                    && w.borrow().left().borrow().color == NodeColor::Black
                 {
                     w.borrow_mut().color = NodeColor::Red;
-                    let x_tmp = x.borrow().parent_unwrap().clone();
+                    let x_tmp = x.borrow().parent().clone();
                     x = x_tmp;
                 } else {
                     // Case 7
-                    if w.borrow().left_unwrap().borrow().color == NodeColor::Black {
-                        w.borrow_mut().right_mut_unwrap().borrow_mut().color = NodeColor::Black;
+                    if w.borrow().left().borrow().color == NodeColor::Black {
+                        w.borrow_mut().right_mut().borrow_mut().color = NodeColor::Black;
                         w.borrow_mut().color = NodeColor::Red;
                         self.left_rotate(w.clone());
-                        w = x
-                            .borrow_mut()
-                            .parent_unwrap()
-                            .borrow()
-                            .left_unwrap()
-                            .clone();
+                        w = x.borrow_mut().parent().borrow().left().clone();
                     }
                     // Case 8
-                    w.borrow_mut().color = x.borrow().parent_unwrap().borrow().color.clone();
-                    x.borrow_mut().parent_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    w.borrow_mut().left_mut_unwrap().borrow_mut().color = NodeColor::Black;
-                    self.right_rotate(x.borrow().parent_unwrap().clone());
-                    x = self.root.as_ref().unwrap().clone();
+                    w.borrow_mut().color = x.borrow().parent().borrow().color.clone();
+                    x.borrow_mut().parent_mut().borrow_mut().color = NodeColor::Black;
+                    w.borrow_mut().left_mut().borrow_mut().color = NodeColor::Black;
+                    self.right_rotate(x.borrow().parent().clone());
+                    x = self.root.clone();
                 }
             }
         }
@@ -373,15 +366,15 @@ impl<T: PartialOrd + Clone + PartialEq + Debug> Tree<T> {
 
     fn search(&self, key: T) -> Option<Rc<RefCell<Node<T>>>> {
         let mut node = self.root.clone();
-        while node.is_some() {
-            let node_key = node.as_ref().unwrap().borrow().key.clone();
+        while !node.borrow().is_nil() {
+            let node_key = node.borrow().key.clone();
             if node_key == key {
-                return node;
+                return Some(node);
             } else if key < node_key {
-                let node_tmp = node.as_ref().unwrap().borrow().left.clone();
+                let node_tmp = node.borrow().left().clone();
                 node = node_tmp;
             } else {
-                let node_tmp = node.as_ref().unwrap().borrow().right.clone();
+                let node_tmp = node.borrow().right().clone();
                 node = node_tmp;
             }
         }
@@ -389,45 +382,44 @@ impl<T: PartialOrd + Clone + PartialEq + Debug> Tree<T> {
     }
 
     pub fn minimum(&self) -> Option<T> {
-        if self.root.is_none() {
+        if self.root.borrow().is_nil() {
             return None;
         }
 
-        self.minimum_node(self.root.as_ref().unwrap().clone())
+        self.minimum_node(self.root.clone())
             .and_then(|node| Some(node.borrow().key.clone()))
     }
     fn minimum_node(&self, node: Rc<RefCell<Node<T>>>) -> Option<Rc<RefCell<Node<T>>>> {
-        if node.borrow().left.is_none() {
+        if node.borrow().left().borrow().is_nil() {
             return Some(node);
         }
 
         let mut x = node.clone();
-        while x.borrow().left.is_some() {
-            let x_tmp = x.borrow().left.as_ref().unwrap().clone();
+        while !x.borrow().left().borrow().is_nil() {
+            let x_tmp = x.borrow().left().clone();
             x = x_tmp;
         }
         Some(x)
     }
 
     pub fn maximum(&self) -> Option<T> {
-        if self.root.is_none() {
+        if self.root.borrow().is_nil() {
             return None;
         }
 
-        self.maximum_node(self.root.as_ref().unwrap().clone())
+        self.maximum_node(self.root.clone())
             .and_then(|node| Some(node.borrow().key.clone()))
     }
     fn maximum_node(&self, node: Rc<RefCell<Node<T>>>) -> Option<Rc<RefCell<Node<T>>>> {
-        if node.borrow().right.is_some() {
+        if node.borrow().right().borrow().is_nil() {
             return Some(node);
         }
 
         let mut x = node.clone();
-        while x.borrow().right.is_some() {
-            let x_tmp = x.borrow().right.as_ref().unwrap().clone();
+        while !x.borrow().right().borrow().is_nil() {
+            let x_tmp = x.borrow().right().clone();
             x = x_tmp;
         }
-
         Some(x)
     }
 }
@@ -447,7 +439,7 @@ fn tree_equality_dfs<T: PartialEq>(
 ) -> bool {
     // Solve base cases
     match (me.clone(), other.clone()) {
-        (None, None) => return true,
+        (None, None) => panic!("Invariant violated. Node's cannot be None"),
         (Some(_), Some(_)) => (),
         _ => return false,
     }
@@ -458,6 +450,15 @@ fn tree_equality_dfs<T: PartialEq>(
 
     if me.as_ref().unwrap().borrow().key != other.as_ref().unwrap().borrow().key {
         return false;
+    }
+
+    match (
+        me.as_ref().unwrap().borrow().is_sentinel,
+        other.as_ref().unwrap().borrow().is_sentinel,
+    ) {
+        (true, true) => return true,
+        (false, false) => (),
+        _ => return false,
     }
 
     let left_subtree = tree_equality_dfs(
@@ -481,6 +482,6 @@ fn tree_equality_dfs<T: PartialEq>(
 
 impl<T: PartialEq> PartialEq<Self> for Tree<T> {
     fn eq(&self, other: &Self) -> bool {
-        tree_equality_dfs(self.root.clone(), other.root.clone())
+        tree_equality_dfs(Some(self.root.clone()), Some(other.root.clone()))
     }
 }

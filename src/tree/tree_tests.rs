@@ -1,11 +1,13 @@
-use crate::{node::Node, tree::Tree};
+use crate::{
+    node::{Node, NodeColor},
+    tree::Tree,
+};
 use proptest::prelude::*;
 use std::{cell::RefCell, cmp::min, rc::Rc};
-use crate::node::NodeColor;
 
 impl<T> Tree<T> {
-    fn empty() -> Tree<T> {
-        Tree { root: None }
+    fn construct(root: Rc<RefCell<Node<T>>>, sentinel: Rc<RefCell<Node<T>>>) -> Tree<T> {
+        Self { root, sentinel }
     }
 }
 
@@ -19,59 +21,91 @@ fn test_left_rotate() {
     //                  /  \
     //                 3    5
     //
-    let a = Node::new(1);
-    let b = Node::new(3);
-    let c = Node::new(5);
-    let mut y = Node::new(4);
-    let mut x = Node::new(2);
-    y.set_left_child(Some(Rc::new(RefCell::new(b))));
-    y.set_right_child(Some(Rc::new(RefCell::new(c))));
-    x.set_left_child(Some(Rc::new(RefCell::new(a))));
-    x.set_right_child(Some(Rc::new(RefCell::new(y))));
-    let mut actual_tree = Tree::new_from_node(x);
+    let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
+    let mut a = Node::new(1);
+    a.set_left_child(sentinel.clone());
+    a.set_right_child(sentinel.clone());
+    let mut b = Node::new(3);
+    b.set_left_child(sentinel.clone());
+    b.set_right_child(sentinel.clone());
+    let mut c = Node::new(5);
+    c.set_left_child(sentinel.clone());
+    c.set_right_child(sentinel.clone());
+    let y = Rc::new(RefCell::new(Node::new(4)));
+    let x = Rc::new(RefCell::new(Node::new(2)));
+    c.set_parent(y.clone());
+    b.set_parent(y.clone());
+    a.set_parent(x.clone());
+    y.borrow_mut().set_left_child(Rc::new(RefCell::new(b)));
+    y.borrow_mut().set_right_child(Rc::new(RefCell::new(c)));
+    x.borrow_mut().set_left_child(Rc::new(RefCell::new(a)));
+    y.borrow_mut().set_parent(x.clone());
+    x.borrow_mut().set_right_child(y);
+    x.borrow_mut().set_parent(sentinel.clone());
+    let mut actual_tree = Tree::construct(x, sentinel);
 
     // Build the expected Tree after performing a left rotate
     //
     //                4
     //               /  \
-    //              1    5
+    //              2    5
     //            /  \
-    //           3     2
-    let a = Node::new(1);
-    let b = Node::new(3);
-    let c = Node::new(5);
-    let mut y = Node::new(4);
-    let mut x = Node::new(2);
-    x.set_left_child(Some(Rc::new(RefCell::new(a))));
-    x.set_right_child(Some(Rc::new(RefCell::new(b))));
-    y.set_left_child(Some(Rc::new(RefCell::new(x))));
-    y.set_right_child(Some(Rc::new(RefCell::new(c))));
-    let expected_tree = Tree::new_from_node(y);
+    //           1     3
+    //
+    let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
+    let mut a = Node::new(1);
+    a.set_left_child(sentinel.clone());
+    a.set_right_child(sentinel.clone());
+    let mut b = Node::new(3);
+    b.set_left_child(sentinel.clone());
+    b.set_right_child(sentinel.clone());
+    let mut c = Node::new(5);
+    c.set_left_child(sentinel.clone());
+    c.set_right_child(sentinel.clone());
+    let y = Rc::new(RefCell::new(Node::new(4)));
+    let x = Rc::new(RefCell::new(Node::new(2)));
+    x.borrow_mut().set_left_child(Rc::new(RefCell::new(a)));
+    x.borrow_mut().set_right_child(Rc::new(RefCell::new(b)));
+    x.borrow_mut().set_parent(y.clone());
+    y.borrow_mut().set_left_child(x);
+    y.borrow_mut().set_right_child(Rc::new(RefCell::new(c)));
+    y.borrow_mut().set_parent(sentinel.clone());
+    let expected_tree = Tree::construct(y, sentinel);
 
-    actual_tree.left_rotate(actual_tree.root.as_ref().unwrap().clone());
+    actual_tree.left_rotate(actual_tree.root.clone());
 
     assert_eq!(actual_tree, expected_tree);
 }
 
 #[test]
 fn test_right_rotate() {
-    // Build the Tree after performing a left rotate
+    // Build the expected Tree after performing a left rotate
     //
     //                4
     //               /  \
-    //              1    5
+    //              2    5
     //            /  \
-    //           3     2
-    let a = Node::new(1);
-    let b = Node::new(3);
-    let c = Node::new(5);
-    let mut y = Node::new(4);
-    let mut x = Node::new(2);
-    x.set_left_child(Some(Rc::new(RefCell::new(a))));
-    x.set_right_child(Some(Rc::new(RefCell::new(b))));
-    y.set_left_child(Some(Rc::new(RefCell::new(x))));
-    y.set_right_child(Some(Rc::new(RefCell::new(c))));
-    let mut actual_tree = Tree::new_from_node(y);
+    //           1     3
+    //
+    let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
+    let mut a = Node::new(1);
+    a.set_left_child(sentinel.clone());
+    a.set_right_child(sentinel.clone());
+    let mut b = Node::new(3);
+    b.set_left_child(sentinel.clone());
+    b.set_right_child(sentinel.clone());
+    let mut c = Node::new(5);
+    c.set_left_child(sentinel.clone());
+    c.set_right_child(sentinel.clone());
+    let y = Rc::new(RefCell::new(Node::new(4)));
+    let x = Rc::new(RefCell::new(Node::new(2)));
+    x.borrow_mut().set_left_child(Rc::new(RefCell::new(a)));
+    x.borrow_mut().set_right_child(Rc::new(RefCell::new(b)));
+    x.borrow_mut().set_parent(y.clone());
+    y.borrow_mut().set_left_child(x);
+    y.borrow_mut().set_right_child(Rc::new(RefCell::new(c)));
+    y.borrow_mut().set_parent(sentinel.clone());
+    let mut actual_tree = Tree::construct(y, sentinel);
 
     // Build an expected Tree that looks like this:
     //
@@ -81,78 +115,106 @@ fn test_right_rotate() {
     //                  /  \
     //                 3    5
     //
-    let a = Node::new(1);
-    let b = Node::new(3);
-    let c = Node::new(5);
-    let mut y = Node::new(4);
-    let mut x = Node::new(2);
-    y.set_left_child(Some(Rc::new(RefCell::new(b))));
-    y.set_right_child(Some(Rc::new(RefCell::new(c))));
-    x.set_left_child(Some(Rc::new(RefCell::new(a))));
-    x.set_right_child(Some(Rc::new(RefCell::new(y))));
-    let expected_tree = Tree::new_from_node(x);
+    let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
+    let mut a = Node::new(1);
+    a.set_left_child(sentinel.clone());
+    a.set_right_child(sentinel.clone());
+    let mut b = Node::new(3);
+    b.set_left_child(sentinel.clone());
+    b.set_right_child(sentinel.clone());
+    let mut c = Node::new(5);
+    c.set_left_child(sentinel.clone());
+    c.set_right_child(sentinel.clone());
+    let y = Rc::new(RefCell::new(Node::new(4)));
+    let x = Rc::new(RefCell::new(Node::new(2)));
+    c.set_parent(y.clone());
+    b.set_parent(y.clone());
+    a.set_parent(x.clone());
+    y.borrow_mut().set_left_child(Rc::new(RefCell::new(b)));
+    y.borrow_mut().set_right_child(Rc::new(RefCell::new(c)));
+    x.borrow_mut().set_left_child(Rc::new(RefCell::new(a)));
+    y.borrow_mut().set_parent(x.clone());
+    x.borrow_mut().set_right_child(y);
+    x.borrow_mut().set_parent(sentinel.clone());
+    let expected_tree = Tree::construct(x, sentinel);
 
-    actual_tree.right_rotate(actual_tree.root.as_ref().unwrap().clone());
+    actual_tree.right_rotate(actual_tree.root.clone());
 
     assert_eq!(actual_tree, expected_tree);
 }
 
-// TODO tests
-// Tests properies of the red black tree. (these are the properties of the red black tree that are abstracted away)
-// Test over multiple interesting types (u32, u64, i32, i64, string)
-// Test over multiple deleteing types
-// Test all public methods
-
-fn is_red<T>(node: Option<Rc<RefCell<Node<T>>>>) -> bool {
-    match node {
-        Some(node) => node.borrow().color == NodeColor::Red,
-        None => false,
-    }
+// // TODO tests
+// // Tests properies of the red black tree. (these are the properties of the red black tree that are abstracted away)
+// // Test over multiple interesting types (u32, u64, i32, i64, string)
+// // Test over multiple deleteing types
+// // Test all public methods
+//
+fn is_red<T>(node: Rc<RefCell<Node<T>>>) -> bool {
+    node.borrow().color == NodeColor::Red
 }
 
-fn is_black<T>(node: Option<Rc<RefCell<Node<T>>>>) -> bool {
+fn is_black<T>(node: Rc<RefCell<Node<T>>>) -> bool
+where
+    T: Default,
+{
     !is_red(node)
 }
 
-fn check_red_node_property<T>(node: Option<Rc<RefCell<Node<T>>>>) -> bool {
-    match node {
-        Some(n) => {
-            if is_red(Some(n.clone())) {
+fn check_red_node_property<T>(node: Rc<RefCell<Node<T>>>) -> bool
+where
+    T: Default,
+{
+    match node.borrow().is_nil() {
+        false => {
+            if is_red(node.clone()) {
                 // Ensure children are black
-                is_black(n.borrow().left.clone()) && is_black(n.borrow().right.clone())
+                is_black(node.borrow().left().clone()) && is_black(node.borrow().right().clone())
             } else {
                 // Recursively check children
-                check_red_node_property(n.borrow().left.clone()) && check_red_node_property(n.borrow().right.clone())
+                check_red_node_property(node.borrow().left().clone())
+                    && check_red_node_property(node.borrow().right().clone())
             }
-        },
-        None => true, // Nil nodes are black
+        }
+        true => true, // Nil nodes are black
     }
 }
 
-fn count_black_nodes<T>(node: Option<Rc<RefCell<Node<T>>>>) -> Vec<i32> {
-    match node {
-        Some(n) => {
-            let left_counts = count_black_nodes(n.borrow().left.clone());
-            let right_counts = count_black_nodes(n.borrow().right.clone());
+fn count_black_nodes<T>(node: Rc<RefCell<Node<T>>>) -> Vec<i32>
+where
+    T: Default,
+{
+    match node.borrow().is_nil() {
+        false => {
+            let left_counts = count_black_nodes(node.borrow().left().clone());
+            let right_counts = count_black_nodes(node.borrow().right().clone());
 
             // Combine and adjust for current node
             let mut counts = vec![];
             for count in left_counts.into_iter().chain(right_counts.into_iter()) {
-                counts.push(count + if n.borrow().color == NodeColor::Black { 1 } else { 0 });
+                counts.push(
+                    count
+                        + if node.borrow().color == NodeColor::Black {
+                            1
+                        } else {
+                            0
+                        },
+                );
             }
             counts
-        },
-        None => vec![1], // Nil nodes are black, count as one black node
+        }
+        true => vec![1], // Nil nodes are black, count as one black node
     }
 }
 
-
-fn assert_red_black_tree_properties<T>(tree: &Tree<T>) {
-    if tree.root.is_none() {
+fn assert_red_black_tree_properties<T>(tree: &Tree<T>)
+where
+    T: Default,
+{
+    if tree.root.borrow().is_nil() {
         panic!("Assertions on empty red-black trees cause a panic for your own sake")
     }
     // Root property
-    assert_eq!(tree.root.as_ref().unwrap().borrow().color, NodeColor::Black);
+    assert_eq!(tree.root.borrow().color, NodeColor::Black);
 
     // Red node property
     assert!(check_red_node_property(tree.root.clone()));
@@ -160,7 +222,10 @@ fn assert_red_black_tree_properties<T>(tree: &Tree<T>) {
     // Black height property
     let black_node_counts = count_black_nodes(tree.root.clone());
     // Ensure all paths have the same number of black nodes
-    assert!(black_node_counts.iter().min() == black_node_counts.iter().max());
+    assert_eq!(
+        black_node_counts.iter().min(),
+        black_node_counts.iter().max()
+    );
 }
 
 #[test]
@@ -206,7 +271,7 @@ fn test_insert_types() {
 fn test_delete_maintains_properties() {
     let mut tree = Tree::new(10);
     tree.delete(10);
-    assert!(tree.root.is_none());
+    assert!(tree.root.borrow().is_nil());
 
     tree.insert(5);
     tree.insert(15);

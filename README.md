@@ -69,5 +69,5 @@ This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.t
 
 ### Optimizations
     
-- Use a unique node T.nil to represent leaf node children and root parent. This makes the algorithm less memory intensive.
+-✅ Use a unique node T.nil to represent leaf node children and root parent. This makes the algorithm less memory intensive.
 
