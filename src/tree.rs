@@ -164,7 +164,6 @@ impl<T: PartialOrd + Clone + PartialEq + Debug + Default> Tree<T> {
             if x.borrow().parent().borrow().is_nil() {
                 self.root = y.clone();
             } else if &x == x.borrow().parent().borrow().left() {
-                // TODO
                 x.borrow_mut()
                     .parent_mut()
                     .borrow_mut()
