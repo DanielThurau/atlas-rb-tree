@@ -4,6 +4,7 @@ use crate::{
 };
 use proptest::prelude::*;
 use std::{cell::RefCell, cmp::min, rc::Rc};
+use std::cmp::max;
 
 impl<T> Tree<T> {
     fn construct(root: Rc<RefCell<Node<T>>>, sentinel: Rc<RefCell<Node<T>>>) -> Tree<T> {
@@ -222,14 +223,6 @@ fn test_right_rotate() {
     assert_eq!(actual_tree, expected_tree);
 }
 
-// // TODO tests
-// // Tests properies of the red black tree. (these are the properties of the red black tree that are abstracted away)
-// // Test over multiple interesting types (u32, u64, i32, i64, string)
-// // Test over multiple deleteing types
-// // Test all public methods
-//
-
-
 #[test]
 fn test_insert_maintains_properties() {
     let mut tree = Tree::new(10);
@@ -290,21 +283,59 @@ fn test_delete_maintains_properties() {
     assert_red_black_tree_properties(&tree);
 }
 
+#[test]
+fn test_contains_key() {
+    let mut tree = Tree::empty();
+
+    assert!(!tree.contains_key(1));
+    assert!(!tree.contains_key(2));
+
+    tree.insert(1);
+
+    assert!(tree.contains_key(1));
+    assert!(!tree.contains_key(2));
+
+    tree.insert(2);
+
+    assert!(tree.contains_key(1));
+    assert!(tree.contains_key(2));
+
+    tree.delete(1);
+
+    assert!(!tree.contains_key(1));
+    assert!(tree.contains_key(2));
+
+    tree.delete(2);
+
+    assert!(!tree.contains_key(1));
+    assert!(!tree.contains_key(2));
+}
+
 proptest! {
     #[test]
     fn test_minimum_empirical(a in 0u32..u32::MAX, b in 0u32..u32::MAX, c in 0u32..u32::MAX) {
         let mut tree = Tree::empty();
-        println!("a: {}", a);
         tree.insert(a);
-        println!("b: {}", b);
         tree.insert(b);
-        println!("c: {}", c);
         tree.insert(c);
         let actual_min = tree.minimum();
 
         let expected_min = min(min(a, b), c);
 
-        println!("Actual_min={:?}, expected_min={}", actual_min, expected_min);
         prop_assert_eq!(actual_min, Some(expected_min));
+    }
+
+
+    #[test]
+    fn test_maximum_empirical(a in 0u32..u32::MAX, b in 0u32..u32::MAX, c in 0u32..u32::MAX) {
+        let mut tree = Tree::empty();
+        tree.insert(a);
+        tree.insert(b);
+        tree.insert(c);
+        let actual_max = tree.maximum();
+
+        let expected_max = max(max(a, b), c);
+
+        prop_assert_eq!(actual_max, Some(expected_max));
     }
 }
