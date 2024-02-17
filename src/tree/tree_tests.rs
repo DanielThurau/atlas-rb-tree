@@ -3,13 +3,20 @@ use crate::{
     tree::Tree,
 };
 use proptest::prelude::*;
-use std::{cell::RefCell, cmp::min, rc::Rc};
-use std::cmp::max;
+use std::{
+    cell::RefCell,
+    cmp::{max, min},
+    rc::Rc,
+};
 
 impl<T> Tree<T> {
     // TODO this is unsafe because the `length` field needs to be set by dfs
     fn construct(root: Rc<RefCell<Node<T>>>, sentinel: Rc<RefCell<Node<T>>>) -> Tree<T> {
-        Self { root, sentinel, length: 0}
+        Self {
+            root,
+            sentinel,
+            length: 0,
+        }
     }
 }
 
@@ -18,15 +25,15 @@ fn is_red<T>(node: Rc<RefCell<Node<T>>>) -> bool {
 }
 
 fn is_black<T>(node: Rc<RefCell<Node<T>>>) -> bool
-    where
-        T: Default,
+where
+    T: Default,
 {
     !is_red(node)
 }
 
 fn check_red_node_property<T>(node: Rc<RefCell<Node<T>>>) -> bool
-    where
-        T: Default,
+where
+    T: Default,
 {
     match node.borrow().is_nil() {
         false => {
@@ -44,8 +51,8 @@ fn check_red_node_property<T>(node: Rc<RefCell<Node<T>>>) -> bool
 }
 
 fn count_black_nodes<T>(node: Rc<RefCell<Node<T>>>) -> Vec<i32>
-    where
-        T: Default,
+where
+    T: Default,
 {
     match node.borrow().is_nil() {
         false => {
@@ -58,10 +65,10 @@ fn count_black_nodes<T>(node: Rc<RefCell<Node<T>>>) -> Vec<i32>
                 counts.push(
                     count
                         + if node.borrow().color == NodeColor::Black {
-                        1
-                    } else {
-                        0
-                    },
+                            1
+                        } else {
+                            0
+                        },
                 );
             }
             counts
@@ -71,8 +78,8 @@ fn count_black_nodes<T>(node: Rc<RefCell<Node<T>>>) -> Vec<i32>
 }
 
 fn assert_red_black_tree_properties<T>(tree: &Tree<T>)
-    where
-        T: Default,
+where
+    T: Default,
 {
     if tree.root.borrow().is_nil() {
         panic!("Assertions on empty red-black trees cause a panic for your own sake")

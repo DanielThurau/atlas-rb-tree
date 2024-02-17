@@ -26,7 +26,6 @@ impl<T: PartialOrd + Clone + PartialEq + Debug + Default> Tree<T> {
     }
 
     pub fn insert(&mut self, key: T) {
-
         let mut z = Node::new(key);
         let mut x = self.root.clone();
         let mut y = self.sentinel.clone();
