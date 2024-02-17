@@ -2,7 +2,7 @@
 
 This project is a Rust implementation of the Red-black Tree
 data structure as described in __Introduction to Algorithms 4th edition__. 
-You Could call this a "textbook implementation". 
+You could call this a "textbook implementation". 
 
 A Red-black Tree is a kind of self-balancing binary search tree.
 Each node of the tree has an extra bit for denoting the color 
