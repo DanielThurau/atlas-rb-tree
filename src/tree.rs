@@ -11,29 +11,22 @@ mod tree_tests;
 pub struct Tree<T> {
     root: Rc<RefCell<Node<T>>>,
     sentinel: Rc<RefCell<Node<T>>>,
+    length: usize,
 }
 
 // TODO cleanup traits. For instance, debug might be to strict.
 impl<T: PartialOrd + Clone + PartialEq + Debug + Default> Tree<T> {
-    pub fn empty() -> Tree<T> {
+    pub fn new() -> Tree<T> {
         let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
         Self {
             root: sentinel.clone(),
             sentinel,
+            length: 0,
         }
     }
 
-    pub fn new(key: T) -> Tree<T> {
-        let root = Rc::new(RefCell::new(Node::new(key)));
-        let sentinel = Rc::new(RefCell::new(Node::new_sentinel()));
-        root.borrow_mut().set_parent(sentinel.clone());
-        root.borrow_mut().set_left_child(sentinel.clone());
-        root.borrow_mut().set_right_child(sentinel.clone());
-
-        Self { root, sentinel }
-    }
-
     pub fn insert(&mut self, key: T) {
+
         let mut z = Node::new(key);
         let mut x = self.root.clone();
         let mut y = self.sentinel.clone();
@@ -64,6 +57,7 @@ impl<T: PartialOrd + Clone + PartialEq + Debug + Default> Tree<T> {
         z.borrow_mut().set_right_child(self.sentinel.clone());
         z.borrow_mut().color = NodeColor::Red;
         self.insert_fix_up(z);
+        self.length += 1;
     }
 
     fn insert_fix_up(&mut self, mut z: Rc<RefCell<Node<T>>>) {
@@ -226,6 +220,7 @@ impl<T: PartialOrd + Clone + PartialEq + Debug + Default> Tree<T> {
         if node.is_some() {
             self.delete_node(node.as_ref().unwrap().clone())
         }
+        self.length -= 1;
     }
 
     fn delete_node(&mut self, z: Rc<RefCell<Node<T>>>) {
@@ -378,6 +373,19 @@ impl<T: PartialOrd + Clone + PartialEq + Debug + Default> Tree<T> {
             }
         }
         None
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    pub fn clear(&mut self) {
+        self.root = self.sentinel.clone();
+        self.length = 0;
     }
 
     pub fn minimum(&self) -> Option<T> {

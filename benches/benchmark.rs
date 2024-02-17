@@ -4,8 +4,9 @@ use rb_tree::tree::Tree;
 fn insert_benchmark(c: &mut Criterion) {
     c.bench_function("Tree insert", |b| {
         b.iter(|| {
-            let mut tree = Tree::new(1);
+            let mut tree = Tree::new();
             tree.insert(black_box(1));
+            tree.insert(black_box(2));
         });
     });
 }
@@ -13,7 +14,8 @@ fn insert_benchmark(c: &mut Criterion) {
 fn delete_benchmark(c: &mut Criterion) {
     c.bench_function("Tree delete", |b| {
         b.iter(|| {
-            let mut tree = Tree::new(0);
+            let mut tree = Tree::new();
+            tree.insert(2);
             tree.insert(1);
             tree.delete(black_box(1))
         });

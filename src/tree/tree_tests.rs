@@ -7,8 +7,9 @@ use std::{cell::RefCell, cmp::min, rc::Rc};
 use std::cmp::max;
 
 impl<T> Tree<T> {
+    // TODO this is unsafe because the `length` field needs to be set by dfs
     fn construct(root: Rc<RefCell<Node<T>>>, sentinel: Rc<RefCell<Node<T>>>) -> Tree<T> {
-        Self { root, sentinel }
+        Self { root, sentinel, length: 0}
     }
 }
 
@@ -225,37 +226,48 @@ fn test_right_rotate() {
 
 #[test]
 fn test_insert_maintains_properties() {
-    let mut tree = Tree::new(10);
-    assert_red_black_tree_properties(&tree);
+    let mut tree = Tree::new();
     tree.insert(5);
+    assert_eq!(tree.length, 1);
     assert_red_black_tree_properties(&tree);
+
     tree.insert(15);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 2);
+
     tree.insert(2);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 3);
+
     tree.insert(7);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 4);
+
     tree.insert(12);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 5);
+
     tree.insert(17);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 6);
 }
 
 #[test]
 fn test_insert_types() {
-    let mut string_tree = Tree::new("Red".to_string());
+    let mut string_tree = Tree::new();
+    string_tree.insert("Red".to_string());
     string_tree.insert("Black".to_string());
     string_tree.insert("Tree".to_string());
 
     assert_red_black_tree_properties(&string_tree);
 
-    let mut i64_tree = Tree::new(-10_i64);
+    let mut i64_tree = Tree::new();
     i64_tree.insert(0_i64);
     i64_tree.insert(100_i64);
 
     assert_red_black_tree_properties(&i64_tree);
 
-    let mut f64_tree = Tree::new(-100.03_f64);
+    let mut f64_tree = Tree::new();
     f64_tree.insert(0.0_f64);
     f64_tree.insert(75_f64);
 
@@ -264,9 +276,12 @@ fn test_insert_types() {
 
 #[test]
 fn test_delete_maintains_properties() {
-    let mut tree = Tree::new(10);
+    let mut tree = Tree::new();
+    tree.insert(10);
+    assert_eq!(tree.length, 1);
     tree.delete(10);
     assert!(tree.root.borrow().is_nil());
+    assert_eq!(tree.length, 0);
 
     tree.insert(5);
     tree.insert(15);
@@ -274,18 +289,24 @@ fn test_delete_maintains_properties() {
     tree.insert(7);
     tree.insert(12);
     tree.insert(17);
+    assert_eq!(tree.length, 6);
 
     tree.delete(17);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 5);
+
     tree.delete(7);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 4);
+
     tree.delete(2);
     assert_red_black_tree_properties(&tree);
+    assert_eq!(tree.length, 3);
 }
 
 #[test]
 fn test_contains_key() {
-    let mut tree = Tree::empty();
+    let mut tree = Tree::new();
 
     assert!(!tree.contains_key(1));
     assert!(!tree.contains_key(2));
@@ -311,10 +332,60 @@ fn test_contains_key() {
     assert!(!tree.contains_key(2));
 }
 
+#[test]
+fn test_is_empty() {
+    let mut tree = Tree::new();
+    assert!(tree.is_empty());
+
+    tree.insert(1);
+    assert!(!tree.is_empty());
+
+    tree.delete(1);
+    assert!(tree.is_empty());
+}
+
+#[test]
+fn test_len() {
+    let mut tree = Tree::new();
+    assert_eq!(tree.len(), 0);
+
+    tree.insert(1);
+    assert_eq!(tree.len(), 1);
+
+    tree.insert(2);
+    assert_eq!(tree.len(), 2);
+
+    tree.delete(2);
+    assert_eq!(tree.len(), 1);
+
+    tree.delete(1);
+    assert_eq!(tree.len(), 0);
+}
+
+#[test]
+fn test_clear() {
+    let mut tree = Tree::new();
+    assert_eq!(tree.len(), 0);
+
+    tree.clear();
+    assert_eq!(tree.len(), 0);
+    assert!(tree.root.borrow().is_nil());
+
+    tree.insert(1);
+    tree.insert(2);
+    tree.insert(3);
+    assert_eq!(tree.len(), 3);
+    assert!(!tree.root.borrow().is_nil());
+
+    tree.clear();
+    assert_eq!(tree.len(), 0);
+    assert!(tree.root.borrow().is_nil());
+}
+
 proptest! {
     #[test]
     fn test_minimum_empirical(a in 0u32..u32::MAX, b in 0u32..u32::MAX, c in 0u32..u32::MAX) {
-        let mut tree = Tree::empty();
+        let mut tree = Tree::new();
         tree.insert(a);
         tree.insert(b);
         tree.insert(c);
@@ -328,7 +399,7 @@ proptest! {
 
     #[test]
     fn test_maximum_empirical(a in 0u32..u32::MAX, b in 0u32..u32::MAX, c in 0u32..u32::MAX) {
-        let mut tree = Tree::empty();
+        let mut tree = Tree::new();
         tree.insert(a);
         tree.insert(b);
         tree.insert(c);
