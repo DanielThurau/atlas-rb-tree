@@ -1,12 +1,12 @@
 [package]
-name = "rb-tree"
+name = "atlas-rb-tree"
 # Versioning: https://doc.rust-lang.org/cargo/reference/manifest.html#the-version-field
 version = "0.1.0"
 edition = "2021"
 authors = ["Daniel Thurau <daniel.n.thurau@gmail.com"]
 description = "A textbook implementation of a Red-Black Tree."
 readme = "README.md"
-repository = "https://github.com/DanielThurau/rb-tree"
+repository = "https://github.com/DanielThurau/atlas-rb-tree"
 license = "MIT"
 keywords = ["rb-tree", "data-structures", "tree", "trees"]
 

@@ -16,7 +16,7 @@ Here's a quick example of how to use the Red-black Tree to
 insert elements and search within the tree:
 
 ```rust
-use rb_tree::Tree;
+use atlas_rb_tree::Tree;
 
 fn main() {
     let mut tree = Tree::new(0); 

@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use rb_tree::tree::Tree;
+use atlas_rb_tree::tree::Tree;
 
 fn insert_benchmark(c: &mut Criterion) {
     c.bench_function("Tree insert", |b| {

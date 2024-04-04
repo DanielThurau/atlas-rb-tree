@@ -24,6 +24,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2faccea4cc4ab4a667ce676a30e8ec13922a692c99bb8f5b11f1502c72e04220"
 
 [[package]]
+name = "atlas-rb-tree"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "proptest",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -476,14 +484,6 @@ checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
-]
-
-[[package]]
-name = "rb-tree"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "proptest",
 ]
 
 [[package]]
